@@ -1,0 +1,591 @@
+#include "mainwindow.h"
+#include "dialog.h"
+#include "ui_mainwindow.h"
+#include "dialogupdate.h"
+#include "qmessagebox.h"
+MainWindow::MainWindow(QWidget *parent) :
+    QMainWindow(parent),
+    ui(new Ui::MainWindow)
+{
+    ui->setupUi(this);
+    db=QSqlDatabase::addDatabase("QSQLITE");
+    db.setDatabaseName("mydb.sqlite");
+    if(!db.open()){
+        QMessageBox::information(this,"Message","Not connected");
+    }
+    model = new QSqlTableModel(0, db);
+    model->setTable("DYSCYPL");
+    model->select();
+    ui->tableView->setModel(model);
+    ui->radioButton->setChecked(true);
+    ui->lineEdit->setEnabled(false);
+    ui->pushButton_3->setEnabled(false);
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+void MainWindow::getcode(QString &code) {
+    ui->listWidget->clear();
+    ui->listWidget->addItem("SYSTEM DEBUG");
+    code = "";
+    code = ui->lineEdit->text();
+    code = code.trimmed();
+    ui->listWidget->addItem("   ALERT Code: " + code);
+    code += "$$";
+}
+
+void MainWindow::on_radioButton_2_clicked()
+{
+    ui->comboBox->setEnabled(false);
+    ui->pushButton->setEnabled(false);
+    ui->lineEdit->setEnabled(true);
+    ui->pushButton_3->setEnabled(true);
+}
+
+void MainWindow::on_radioButton_clicked()
+{
+    ui->lineEdit->setEnabled(false);
+    ui->pushButton_3->setEnabled(false);
+    ui->comboBox->setEnabled(true);
+    ui->pushButton->setEnabled(true);
+}
+
+void MainWindow::on_pushButton_clicked()
+{
+    QSqlQueryModel *qmodel = new QSqlQueryModel;
+   // qmodel->setQuery("SELECT * FROM student2 WHERE \"group\"=\"1\";");
+    if(ui->listWidget->SelectedClicked){
+        qmodel->setQuery(ui->comboBox->currentText());
+            //не срабатывает для группы, причину еще не нашел
+    ui->tableView->setModel(qmodel);
+    }
+    //
+}
+
+void MainWindow::on_pushButton_3_clicked()
+{
+    QSqlQueryModel *qmodel = new QSqlQueryModel;
+   // qmodel->setQuery("SELECT * FROM student2 WHERE \"group\"=\"1\";");
+    qmodel->setQuery(ui->lineEdit->text());
+            //не срабатывает для группы, причину еще не нашел
+    ui->tableView->setModel(qmodel);
+
+    //
+
+
+}
+
+void MainWindow::on_pushButton_2_clicked()
+{
+    QString code;
+    getcode(code);
+    checkcode(ui->lineEdit->text(),fname,0);
+
+}
+void MainWindow::checkcode(QString code, QString &fname, int analyze) {
+    state = 0;
+    compile = true;
+    fname = "";
+    qtype = -1;
+    ch=new QChar(code.length()+1);
+    ch=code.data();
+
+    for (int i = 0; i < code.length(); i++) {
+
+        switch (state) {
+        case 0:
+            if(ch[i]=='D'){
+                state = 1;
+                break;
+            }
+            if(ch[i]=='S'){
+                state = 22;
+                break;
+             }
+                ui->listWidget->addItem("   ERROR Querry");
+                state = 10000001;
+            break;
+        case 1:
+             if(ch[i]=='R'){
+                state = 2;
+                break;
+             }
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED   \'DROP\'  \"");
+                state = 10000001;
+            break;
+        case 2:
+             if(ch[i]=='O'){
+                state = 3;
+                break;
+             }
+             ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED   \'DROP\'  \"");
+                state = 10000001;
+            break;
+        case 3:
+             if(ch[i]=='P'){
+                state = 4;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED   \'DROP\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 4:
+             if(ch[i]==' '){
+                state = 5;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'space\' after \'DROP\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 5:
+             if(ch[i]=='T'){
+                state = 6;
+                break;
+             }
+             if(ch[i]=='D'){
+                state = 13;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'TABLE\' or \'DATABASE\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 6:
+             if(ch[i]=='A'){
+                state = 7;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'TABLE\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 7:
+             if(ch[i]=='B'){
+                state = 8;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'TABLE\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 8:
+             if(ch[i]=='L'){
+                state = 9;
+                break;
+             }
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'TABLE\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 9:
+             if(ch[i]=='E'){
+                state = 10;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'TABLE\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 10:
+            if(ch[i]==' '){
+                state = 11;
+                break;
+            }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'space\' after \'TABLE\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 11:
+             if(ch[i]=='$'){
+                state = 10000001;
+                break;
+             }
+            if(ch[i]==' '){
+                state = 10000001;
+                break;
+            }
+
+                state = 12;
+                fname += ch[i];
+                qtype = 1;
+
+            break;
+
+        case 12:
+             if(ch[i]=='$'){
+                state = 1000000;
+                break;
+             }
+             if(ch[i]==' '){
+                state = 1000000;
+                break;
+             }
+             if(ch[i]==';'){
+                state = 1000000;
+                break;
+             }
+
+                state = 12;
+                fname += ch[i];
+
+            break;
+
+        case 13:
+             if(ch[i]=='A'){
+                state = 14;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'DATABASE\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 14:
+             if(ch[i]=='T'){
+                state = 15;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'DATABASE\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 15:
+             if(ch[i]=='A'){
+                state = 16;
+                break;
+             }
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'DATABASE\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 16:
+             if(ch[i]=='B'){
+                state = 17;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'DATABASE\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 17:
+             if(ch[i]=='A'){
+                state = 18;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'DATABASE\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 18:
+             if(ch[i]=='S'){
+                state = 19;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'DATABASE\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 19:
+             if(ch[i]=='E'){
+                state = 20;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'DATABASE\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 20:
+           if(ch[i]==' '){
+                state = 21;
+                break;
+           }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'space\' after \'DATABASE\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 21:
+             if(ch[i]=='$'){
+                state = 10000001;
+                break;
+             }
+             if(ch[i]==' '){
+                state = 10000001;
+                break;
+             }
+
+                state = 12;
+                fname += ch[i];
+                qtype = 1;
+
+            break;
+
+        case 22:
+             if(ch[i]=='E'){
+                state = 23;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'SELECT\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 23:
+             if(ch[i]=='L'){
+                state = 24;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'SELECT\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 24:
+             if(ch[i]=='E'){
+                state = 25;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'SELECT\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 25:
+             if(ch[i]=='C'){
+                state = 26;
+                break;
+             }
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'SELECT\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 26:
+             if(ch[i]=='T'){
+                state = 27;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'SELECT\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 27:
+             if(ch[i]==' '){
+                state = 28;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'space\' after \'SELECT\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 28:
+             if(ch[i]=='*'){
+                state = 29;
+                break;
+             }
+
+                ui->listWidget->addItem("   ERROR State \"EXPECTED \'*\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 29:
+            if(ch[i]==' '){
+                state = 30;
+                break;
+            }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'space\' after \'*\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 30:
+             if(ch[i]=='F'){
+                state = 31;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'FROM\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 31:
+             if(ch[i]=='R'){
+                state = 32;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'FROM\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 32:
+             if(ch[i]=='O'){
+                state = 33;
+                break;
+             }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'FROM\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 33:
+             if(ch[i]=='M'){
+                state = 34;
+                break;
+            }
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'FROM\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 34:
+            if(ch[i]==' '){
+                state = 35;
+                break;
+            }
+
+                ui->listWidget->addItem(
+                        "   ERROR State \"EXPECTED \'space\' after \'FROM\'  \"");
+                state = 10000001;
+
+            break;
+
+        case 35:
+             if(ch[i]=='$'){
+                state = 10000001;
+                break;
+             }
+             if(ch[i]==' '){
+                state = 10000001;
+                break;
+             }
+             if(ch[i]==';'){
+                state = 10000001;
+                break;
+             }
+
+                state = 36;
+                fname += ch[i];
+                qtype = 2;
+
+            break;
+
+        case 36:
+             if(ch[i]=='$'){
+                state = 1000000;
+                break;
+             }
+             if(ch[i]==' '){
+                state = 1000000;
+                break;
+             }
+             if(ch[i]==';'){
+                state = 1000000;
+                break;
+             }
+
+                state = 36;
+                fname += ch[i];
+
+            break;
+
+        case 1000000:
+            fname += ".txt";
+            fname = fname.trimmed();
+            ui->listWidget->addItem("   WARNING File name: " + fname);
+            compile = false;
+            if (analyze == 1) {
+               ui->listWidget->addItem("   WARNING Analyzing: Complete");
+            }
+            break;
+
+        case 10000001:
+            ui->listWidget->addItem("   FATAL ERROR Querry");
+            if (analyze == 1) {
+                ui->listWidget->addItem("   WARNING Analyzing: Complete");
+            }
+            compile = false;
+            break;
+
+        }
+
+        if (compile == false) {
+            break;
+
+        }
+    }
+
+}
